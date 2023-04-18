@@ -1,4 +1,4 @@
-module intset
+module github.com/weiwenchen2022/intset
 
 go 1.20
 

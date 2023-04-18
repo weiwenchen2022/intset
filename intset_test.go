@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"intset"
+	"github.com/weiwenchen2022/intset"
 
 	"github.com/google/go-cmp/cmp"
 )

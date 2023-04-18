@@ -2,7 +2,8 @@ package intset_test
 
 import (
 	"fmt"
-	"intset"
+
+	"github.com/weiwenchen2022/intset"
 )
 
 func Example() {
