@@ -8,7 +8,7 @@ symmetric difference operations, and the ability to query the number of elements
 
 ### Installation
 
-`go get github.com/weiwenchen/intset`
+`go get github.com/weiwenchen2022/intset`
 
 ### Reference
 
