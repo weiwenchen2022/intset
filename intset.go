@@ -252,21 +252,6 @@ func (s *IntSet[E]) BitString() string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-// GoString returns a string showing the internal representation of the set s.
-// func (s *IntSet[E]) GoString() string {
-// 	var b strings.Builder
-
-// 	for _, word := range s.words {
-// 		if b.Len() > 0 {
-// 			b.WriteByte(' ')
-// 		}
-
-// 		fmt.Fprintf(&b, "%#0*b", wordSize, word)
-// 	}
-
-// 	return b.String()
-// }
-
 // Equals reports whether the sets s and t have the same elements.
 func (s *IntSet[E]) Equals(t *IntSet[E]) bool {
 	if s == t {
