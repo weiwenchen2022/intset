@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"testing/quick"
+	"unsafe"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -36,6 +37,7 @@ type setInterface interface {
 	Min() int
 
 	String() string
+	BitString() string
 
 	TakeMin(*int) bool
 
@@ -91,7 +93,6 @@ func (s *MapSet) AppendTo(slice []int) []int {
 		elems[i] = x
 		i++
 	})
-	sort.Ints(elems)
 
 	return slice[:total]
 }
@@ -141,26 +142,19 @@ func (s *MapSet) LowerBound(x int) int {
 }
 
 func (s *MapSet) Max() int {
-	max := MinInt
-	s.forEach(func(x int) {
-		if max < x {
-			max = x
-		}
-	})
+	if s.IsEmpty() {
+		return MinInt
+	}
 
-	return max
+	return s.AppendTo(nil)[s.Len()-1]
 }
 
 func (s *MapSet) Min() int {
-	min := MaxInt
+	if s.IsEmpty() {
+		return MaxInt
+	}
 
-	s.forEach(func(x int) {
-		if x < min {
-			min = x
-		}
-	})
-
-	return min
+	return s.AppendTo(nil)[0]
 }
 
 func (s *MapSet) Remove(x int) bool {
@@ -179,7 +173,6 @@ func (s *MapSet) String() string {
 		elems[i] = x
 		i++
 	})
-	sort.Ints(elems)
 
 	var b strings.Builder
 
@@ -196,20 +189,34 @@ func (s *MapSet) String() string {
 	return b.String()
 }
 
+func (s *MapSet) BitString() string {
+	if s.IsEmpty() {
+		return "0"
+	}
+
+	n := int(s.Max())
+	n++ // zero bit
+	radix := n
+
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = '0'
+	}
+
+	s.forEach(func(x int) {
+		b[radix-x-1] = '1'
+	})
+
+	return *(*string)(unsafe.Pointer(&b))
+}
+
 func (s *MapSet) TakeMin(p *int) bool {
-	if len(s.m) == 0 {
+	if s.IsEmpty() {
 		return false
 	}
 
-	min := MaxInt
-	s.forEach(func(x int) {
-		if x < min {
-			min = x
-		}
-	})
-
-	delete(s.m, min)
-	*p = min
+	*p = s.AppendTo(nil)[0]
+	delete(s.m, *p)
 	return true
 }
 
@@ -307,8 +314,17 @@ func (s *MapSet) init() {
 	}
 }
 
+// forEach applies function f to each element of the set s in order.
 func (s *MapSet) forEach(f func(int)) {
+	xs := make([]int, len(s.m))
+	i := 0
 	for x := range s.m {
+		xs[i] = x
+		i++
+	}
+	sort.Ints(xs)
+
+	for _, x := range xs {
 		f(x)
 	}
 }

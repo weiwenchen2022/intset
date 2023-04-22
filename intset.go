@@ -231,12 +231,7 @@ func (s *IntSet[E]) BitString() string {
 		return "0"
 	}
 
-	max := int(s.Max())
-	var n int
-	if max > 0 {
-		n = max
-	}
-
+	n := int(s.Max())
 	n++ // zero bit
 	radix := n
 
@@ -338,7 +333,7 @@ func (s *IntSet[E]) Min() E {
 	return MaxInt
 }
 
-// UnionWith sets s to the union of s and t.
+// UnionWith sets s to the union s ∪ t.
 func (s *IntSet[E]) UnionWith(t *IntSet[E]) {
 	for i, tword := range t.words {
 		if i < len(s.words) {
@@ -349,7 +344,7 @@ func (s *IntSet[E]) UnionWith(t *IntSet[E]) {
 	}
 }
 
-// IntersectWith sets s to the intersection of s and t.
+// IntersectWith sets s to the intersection s ∩ t.
 func (s *IntSet[E]) IntersectWith(t *IntSet[E]) {
 	for i := range s.words {
 		if i < len(t.words) {
@@ -360,7 +355,7 @@ func (s *IntSet[E]) IntersectWith(t *IntSet[E]) {
 	}
 }
 
-// Intersects reports whether the intersection of s and t is non empty set.
+// Intersects reports whether s ∩ x ≠ ∅.
 func (s *IntSet[E]) Intersects(t *IntSet[E]) bool {
 	for i, tword := range t.words {
 		if tword == 0 {
@@ -379,7 +374,7 @@ func (s *IntSet[E]) Intersects(t *IntSet[E]) bool {
 	return false
 }
 
-// DifferenceWith sets s to the difference of s and t.
+// DifferenceWith sets s to the difference s ∖ t.
 func (s *IntSet[E]) DifferenceWith(t *IntSet[E]) {
 	if s == t {
 		s.Clear()
@@ -393,7 +388,7 @@ func (s *IntSet[E]) DifferenceWith(t *IntSet[E]) {
 	}
 }
 
-// SymmetricDifference sets s to the symmetric difference of s and t.
+// SymmetricDifference sets s to the symmetric difference s ∆ t.
 func (s *IntSet[E]) SymmetricDifference(t *IntSet[E]) {
 	for i, tword := range t.words {
 		if i < len(s.words) {
@@ -404,7 +399,7 @@ func (s *IntSet[E]) SymmetricDifference(t *IntSet[E]) {
 	}
 }
 
-// SubsetOf reports the difference of s and t is empty set.
+// SubsetOf reports whether s ∖ t = ∅.
 func (s *IntSet[E]) SubsetOf(t *IntSet[E]) bool {
 	for i, word := range s.words {
 		if word == 0 {

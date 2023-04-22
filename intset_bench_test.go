@@ -64,22 +64,23 @@ func BenchmarkAddProbeIntSet_100_1000(b *testing.B) {
 }
 
 type bench struct {
-	setup func(*testing.B, setInterface) *rand.Rand
-	perG  func(*testing.B, setInterface, *rand.Rand)
+	setup func(b *testing.B, s, t setInterface) *rand.Rand
+	perG  func(b *testing.B, s, t setInterface, r *rand.Rand)
 }
 
 func benchSet(b *testing.B, bench bench) {
 	for _, s := range [...]setInterface{&MapSet{}, &IntSet{}} {
 		b.Run(fmt.Sprintf("%T", s), func(b *testing.B) {
 			s = reflect.New(reflect.TypeOf(s).Elem()).Interface().(setInterface)
+			t := reflect.New(reflect.TypeOf(s).Elem()).Interface().(setInterface)
 			var r *rand.Rand
 			if bench.setup != nil {
-				r = bench.setup(b, s)
+				r = bench.setup(b, s, t)
 			}
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				bench.perG(b, s, r)
+				bench.perG(b, s, t, r)
 			}
 		})
 	}
@@ -89,13 +90,34 @@ func BenchmarkAdd(b *testing.B) {
 	const n = 100000
 
 	benchSet(b, bench{
-		setup: func(b *testing.B, s setInterface) *rand.Rand {
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
 			r := rand.New(rand.NewSource(time.Now().UnixNano()))
 			return r
 		},
 
-		perG: func(b *testing.B, s setInterface, r *rand.Rand) {
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
 			s.Add(r.Intn(n))
+		},
+	})
+}
+
+func BenchmarkRemove(b *testing.B) {
+	const n = 100000
+
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				s.Add(r.Intn(n))
+			}
+
+			return r
+		},
+
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
+			if s.Remove(r.Intn(n)) {
+				s.Add(r.Intn(n))
+			}
 		},
 	})
 }
@@ -104,7 +126,7 @@ func BenchmarkHas(b *testing.B) {
 	const n = 100000
 
 	benchSet(b, bench{
-		setup: func(b *testing.B, s setInterface) *rand.Rand {
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
 			r := rand.New(rand.NewSource(time.Now().UnixNano()))
 			for i := 0; i < n; i++ {
 				s.Add(r.Intn(n))
@@ -113,7 +135,7 @@ func BenchmarkHas(b *testing.B) {
 			return r
 		},
 
-		perG: func(b *testing.B, s setInterface, r *rand.Rand) {
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
 			s.Has(r.Intn(n))
 		},
 	})
@@ -123,7 +145,7 @@ func BenchmarkLen(b *testing.B) {
 	const n = 100000
 
 	benchSet(b, bench{
-		setup: func(b *testing.B, s setInterface) *rand.Rand {
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
 			r := rand.New(rand.NewSource(time.Now().UnixNano()))
 			for i := 0; i < n; i++ {
 				s.Add(r.Intn(n))
@@ -132,17 +154,15 @@ func BenchmarkLen(b *testing.B) {
 			return nil
 		},
 
-		perG: func(b *testing.B, s setInterface, r *rand.Rand) {
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
 			s.Len()
 		},
 	})
 }
 
-func BenchmarkAppendTo(b *testing.B) {
-	var elems [1000]int
-
+func BenchmarkIsEmpty(b *testing.B) {
 	benchSet(b, bench{
-		setup: func(b *testing.B, s setInterface) *rand.Rand {
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
 			r := rand.New(rand.NewSource(time.Now().UnixNano()))
 			for i := 0; i < 1000; i++ {
 				s.Add(r.Intn(10000))
@@ -151,37 +171,247 @@ func BenchmarkAppendTo(b *testing.B) {
 			return nil
 		},
 
-		perG: func(b *testing.B, s setInterface, r *rand.Rand) {
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
+			s.IsEmpty()
+		},
+	})
+}
+
+func BenchmarkAppendTo(b *testing.B) {
+	var elems [1000]int
+
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				s.Add(r.Intn(10000))
+			}
+
+			return nil
+		},
+
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
 			s.AppendTo(elems[:0])
 		},
 	})
 }
 
-func BenchmarkUnionDifference(b *testing.B) {
+func BenchmarkBitString(b *testing.B) {
 	benchSet(b, bench{
-		setup: func(b *testing.B, s setInterface) *rand.Rand {
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
 			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				s.Add(r.Intn(100000))
+			}
+
+			return nil
+		},
+
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
+			s.BitString()
+		},
+	})
+}
+
+func BenchmarkCopy(b *testing.B) {
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				s.Add(r.Intn(10000))
+			}
+
+			return nil
+		},
+
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
+			s.Copy()
+		},
+	})
+}
+
+func BenchmarkLowerBound(b *testing.B) {
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				s.Add(r.Intn(100000))
+			}
+
 			return r
 		},
 
-		perG: func(b *testing.B, s setInterface, r *rand.Rand) {
-			b.StopTimer()
-			s.Clear()
-			t := s.Copy().(setInterface)
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
+			s.LowerBound(r.Intn(100000))
+		},
+	})
+}
 
-			for j := 0; j < 1000; j++ {
+func BenchmarkMax(b *testing.B) {
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				s.Add(r.Intn(100000))
+			}
+
+			return nil
+		},
+
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
+			s.Max()
+		},
+	})
+}
+
+func BenchmarkMin(b *testing.B) {
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				s.Add(r.Intn(100000))
+			}
+
+			return nil
+		},
+
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
+			s.Min()
+		},
+	})
+}
+
+func BenchmarkTakeMin(b *testing.B) {
+	const n = 100000
+
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, _ setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				s.Add(r.Intn(n))
+			}
+
+			return r
+		},
+
+		perG: func(b *testing.B, s, _ setInterface, r *rand.Rand) {
+			var x int
+			if s.TakeMin(&x) {
+				s.Add(r.Intn(n))
+			}
+		},
+	})
+}
+
+func BenchmarkEquals(b *testing.B) {
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, t setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
 				x := r.Intn(100000)
-				if j%2 == 0 {
+				if i%2 == 0 {
 					s.Add(x)
 				} else {
 					t.Add(x)
 				}
 			}
-			sc := s.Copy().(setInterface)
 
-			b.StartTimer()
+			return nil
+		},
+
+		perG: func(b *testing.B, s, t setInterface, r *rand.Rand) {
+			s.Equals(t)
+		},
+	})
+}
+
+func BenchmarkUnionWith(b *testing.B) {
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, t setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				x := r.Intn(100000)
+				if i%2 == 0 {
+					s.Add(x)
+				} else {
+					t.Add(x)
+				}
+			}
+
+			return nil
+		},
+
+		perG: func(b *testing.B, s, t setInterface, r *rand.Rand) {
+			sc := s.Copy().(setInterface)
 			sc.UnionWith(t)
-			s.DifferenceWith(t)
+		},
+	})
+}
+
+func BenchmarkIntersectWith(b *testing.B) {
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, t setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				x := r.Intn(100000)
+				if i%2 == 0 {
+					s.Add(x)
+				} else {
+					t.Add(x)
+				}
+			}
+
+			return nil
+		},
+
+		perG: func(b *testing.B, s, t setInterface, r *rand.Rand) {
+			sc := s.Copy().(setInterface)
+			sc.IntersectWith(t)
+		},
+	})
+}
+
+func BenchmarkIntersects(b *testing.B) {
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, t setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				x := r.Intn(100000)
+				if i%2 == 0 {
+					s.Add(x)
+				} else {
+					t.Add(x)
+				}
+			}
+
+			return nil
+		},
+
+		perG: func(b *testing.B, s, t setInterface, r *rand.Rand) {
+			s.Intersects(t)
+		},
+	})
+}
+
+func BenchmarkDifferenceWith(b *testing.B) {
+	benchSet(b, bench{
+		setup: func(b *testing.B, s, t setInterface) *rand.Rand {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < 1000; i++ {
+				x := r.Intn(100000)
+				if i%2 == 0 {
+					s.Add(x)
+				} else {
+					t.Add(x)
+				}
+			}
+
+			return nil
+		},
+
+		perG: func(b *testing.B, s, t setInterface, r *rand.Rand) {
+			sc := s.Copy().(setInterface)
+			sc.DifferenceWith(t)
 		},
 	})
 }

@@ -79,7 +79,8 @@ const (
 
 	opRemove = setOp("Remove")
 
-	opString = setOp("String")
+	opString    = setOp("String")
+	opBitString = setOp("BitString")
 
 	opTakeMin = setOp("TakeMin")
 
@@ -112,6 +113,7 @@ var setOps = [...]setOp{
 	opMin,
 
 	opString,
+	opBitString,
 
 	opTakeMin,
 
@@ -203,6 +205,8 @@ func (c setCall) apply(s setInterface) (any, bool) {
 		return c.x, s.Remove(c.x)
 	case opString:
 		return s.String(), true
+	case opBitString:
+		return s.BitString(), true
 	case opTakeMin:
 		var x int
 		ok := s.TakeMin(&x)
