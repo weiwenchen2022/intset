@@ -1,10 +1,10 @@
 // Package intset provides IntSet, a compact and fast representation
-// for sets of non-negative integers.
+// for sets of non-negative int values.
 //
 // The time complexity of the operations Add, Remove and Has
 // is in O(1) in practice those methods are faster and more
 // space-efficient than equivalent operations on sets based on the Go
-// map type.  The Len, IsEmpty, Min, Max, and TakeMin operations
+// map type. The Len, IsEmpty, Min, Max, and TakeMin operations
 // require O(n).
 package intset
 
@@ -40,11 +40,12 @@ func wordBit(x int) (w int, bit uint) {
 	return x >> lg2WordSize, uint(x & bitmask)
 }
 
-// IntSet is a set of small non-negative integers.
+// IntSet is a set of small non-negative int values.
 //
 // The zero value represents a valid empty set.
 //
-// IntSet must be copied using the Copy method, not by assigning a IntSet value.
+// IntSet must be copied using the Copy method, not by assigning
+// a IntSet value.
 type IntSet[E ~int] struct {
 	words []uint
 }
@@ -139,8 +140,8 @@ func (s *IntSet[E]) Elems() []E {
 	return s.AppendTo(nil)
 }
 
-// If set s is non-empty, TakeMin sets *p to the minimum element of
-// the set s, removes that element from the set and returns true.
+// TakeMin sets *p to the minimum element of the set s,
+// removes that element from the set and returns true If set s is non-empty.
 // Otherwise, it returns false and *p is undefined.
 //
 // This method may be used for iteration over a worklist like so:

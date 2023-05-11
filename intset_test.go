@@ -600,7 +600,7 @@ func TestLen(t *testing.T) {
 	s.Add(144)
 	s.Add(9)
 
-	if n := s.Len(); 3 != n {
+	if n := s.Len(); n != 3 {
 		t.Errorf("Len report %d elements, but it should be %d", n, 3)
 	}
 }
@@ -645,12 +645,12 @@ func TestClear(t *testing.T) {
 	s.Add(144)
 	s.Add(9)
 
-	if 3 != s.Len() {
+	if s.Len() != 3 {
 		t.Error("miss some elements")
 	}
 
 	s.Clear()
-	if 0 != s.Len() {
+	if s.Len() != 0 {
 		t.Error("clear set failed")
 	}
 }
